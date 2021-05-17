@@ -27,6 +27,7 @@ import com.google.api.services.classroom.Classroom;
 import com.google.api.services.classroom.ClassroomScopes;
 import com.google.api.services.classroom.model.Course;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -104,9 +105,6 @@ public class MainActivity extends AppCompatActivity {
                         // Signed in successfully, show authenticated UI.
 
                         course();
-                        Intent intent = new Intent(MainActivity.this, ResultActivity.class);
-                        startActivity(intent);
-
 
                     }
                 }).addOnFailureListener(new OnFailureListener() {
@@ -117,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void course(){
+    public void course(){ //classroom 가져오기
         ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
         progressDialog.setTitle("Classroom List getting");
         progressDialog.setMessage("Please wait");
@@ -126,6 +124,24 @@ public class MainActivity extends AppCompatActivity {
         mClassroomServiceHelper.listCourses().addOnSuccessListener(new OnSuccessListener<List<Course>>() {
             @Override
             public void onSuccess(List<Course> courses) {
+                Log.d(TAG,"MainActivityClassroom");
+                ArrayList<String> classname = new ArrayList<>();
+                ArrayList<String> classid = new ArrayList<>();
+
+                for (Course course : courses) {
+                    String class_name = course.getName();
+                    String class_id = course.getId();
+                    classname.add(class_name);
+                    classid.add(class_id);
+                    System.out.printf("%s (%s)\n", class_name, class_id);
+                }
+                Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+                intent.putExtra("classname",classname);
+                intent.putExtra("classid",classid);
+                startActivity(intent);
+//                for(String i : classname)
+//                    System.out.println("classname"+i);
+
                 Log.d(TAG,"Classroom"+courses.toString()+".");
 
                 progressDialog.dismiss();

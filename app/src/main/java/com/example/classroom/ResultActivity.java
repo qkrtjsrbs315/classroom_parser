@@ -1,5 +1,6 @@
 package com.example.classroom;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
@@ -35,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,13 +47,21 @@ public class ResultActivity extends AppCompatActivity {
    Button signOut;
     GoogleApiClient mGoogleApiClient;
     private GoogleSignInClient mGoogleSignInClient;
-    ClassroomServiceHelper mClassroomServiceHelper;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
+
+
+        Intent intent = getIntent();
+        ArrayList<String> classname = intent.getStringArrayListExtra("classname");
+        ArrayList<String> classid = intent.getStringArrayListExtra("classid");
+        int cnt = 0;
+        for(String i : classname) {
+            System.out.printf("%s번 %s\n",cnt, i);
+            cnt += 1;
+        }
 
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -62,27 +72,16 @@ public class ResultActivity extends AppCompatActivity {
 
         imageView = findViewById(R.id.iv_profile);
         name = findViewById(R.id.tv_result);
-        signOut = findViewById(R.id.btn_logout);
+        account();
 
+
+        signOut = findViewById(R.id.btn_logout); //로그아웃
         signOut.setOnClickListener(v -> {
             if (v.getId() == R.id.btn_logout) {
                 signOut();
             }
         });
 
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-        if(account != null){
-            String Name = account.getDisplayName();
-            Uri photo = account.getPhotoUrl();
-            name.setText(Name);
-            if(photo != null)
-               Glide.with(this).load(String.valueOf(photo)).into(imageView);
-            else
-                Toast.makeText(getApplicationContext(),"사진이 없습니다.",Toast.LENGTH_LONG).show();
-
-           // Task<List<Course>> courses =  mClassroomServiceHelper.listCourses();
-
-        }
     }
 
     private void signOut() {
@@ -94,6 +93,21 @@ public class ResultActivity extends AppCompatActivity {
                         finish();
                     }
                 });
+    }
+    private void account(){
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if(account != null){
+            String Name = account.getDisplayName();
+            Uri photo = account.getPhotoUrl();
+            name.setText(Name);
+            if(photo != null)
+                Glide.with(this).load(String.valueOf(photo)).into(imageView);
+            else
+                Toast.makeText(getApplicationContext(),"사진이 없습니다.",Toast.LENGTH_LONG).show();
+
+            // Task<List<Course>> courses =  mClassroomServiceHelper.listCourses();
+
+        }
     }
 
 
