@@ -109,7 +109,9 @@ public abstract class ThirdPartyLoginActivity extends AppCompatActivity {
                         }
 
                         account = googleSignInAccount.getEmail();
+
                         Log.d(TAG, "acount : " + account);
+
                         updateUI(true);
                         makeClassroomHelper();
                     }

@@ -1,5 +1,8 @@
 package com.example.classroom;
 
+import android.util.Log;
+
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.CancellationToken;
 import com.google.android.gms.tasks.OnTokenCanceledListener;
 import com.google.android.gms.tasks.Task;
@@ -12,6 +15,7 @@ import com.google.api.services.classroom.model.ListCourseWorkResponse;
 import com.google.api.services.classroom.model.ListCoursesResponse;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
@@ -23,10 +27,11 @@ import java.util.concurrent.Executors;
 
 public class ClassroomServiceHelper {
 
+    private static final String TAG = "asd";
     // If you don't want to multiThread, use 'newSingleThreadExecutor' method.
     private final Executor mExecutor = Executors.newFixedThreadPool(5);
     private final Classroom mClassroomService;
-
+    String pageToken = null;
     public ClassroomServiceHelper(Classroom ClassroomService) {
         mClassroomService = ClassroomService;
     }
@@ -35,12 +40,27 @@ public class ClassroomServiceHelper {
         return Tasks.call(mExecutor, new Callable<List<Course>>() {
             @Override
             public List<Course> call() throws Exception {
-                ListCoursesResponse response = mClassroomService.courses().list()
-                        .setPageSize(10)
-                        .execute();
+                List<Course> courses = new ArrayList<Course>();
 
-                List<Course> courses = response.getCourses();
-                System.out.println(courses);
+                do {
+                    ListCoursesResponse response = mClassroomService.courses().list()
+                            .setPageSize(100)
+                            .setPageToken(pageToken)
+                            .execute();
+                    courses.addAll(response.getCourses());
+                    pageToken = response.getNextPageToken();
+                } while (pageToken != null);
+
+                if (courses.isEmpty()) {
+                    System.out.println("No courses found.");
+                } else {
+                    Log.d("ClassroomServiceHelper","alph");
+                    for (Course course : courses) {
+                        System.out.printf("%s (%s)\n", course.getName(), course.getId());
+                    }
+                }
+
+                Log.d(TAG, "call: "+courses);
 
                 return courses;
             }

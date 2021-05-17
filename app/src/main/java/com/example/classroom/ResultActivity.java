@@ -15,6 +15,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.api.client.auth.oauth2.Credential;
@@ -26,7 +27,9 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.classroom.Classroom;
 import com.google.api.services.classroom.ClassroomScopes;
+import com.google.api.services.classroom.model.Course;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -40,19 +43,9 @@ public class ResultActivity extends AppCompatActivity {
    ImageView imageView;
    TextView name;
    Button signOut;
-
+    GoogleApiClient mGoogleApiClient;
     private GoogleSignInClient mGoogleSignInClient;
-    private final String TAG = "Hello";
-    private static final String APPLICATION_NAME = "Google Classroom API Java Quickstart";
-    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "tokens";
-
-    /**
-     * Global instance of the scopes required by this quickstart.
-     * If modifying these scopes, delete your previously saved tokens/ folder.
-     */
-    private static final List<String> SCOPES = Collections.singletonList(ClassroomScopes.CLASSROOM_COURSES_READONLY);
-    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    ClassroomServiceHelper mClassroomServiceHelper;
 
 
     @Override
@@ -82,37 +75,15 @@ public class ResultActivity extends AppCompatActivity {
             String Name = account.getDisplayName();
             Uri photo = account.getPhotoUrl();
             name.setText(Name);
+            if(photo != null)
+               Glide.with(this).load(String.valueOf(photo)).into(imageView);
+            else
+                Toast.makeText(getApplicationContext(),"사진이 없습니다.",Toast.LENGTH_LONG).show();
 
-            Glide.with(this).load(String.valueOf(photo)).into(imageView);
-
+           // Task<List<Course>> courses =  mClassroomServiceHelper.listCourses();
 
         }
-
-
-
-
-
-
     }
-
-    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        // Load client secrets.
-        InputStream in = ClassroomQuickstart.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-    }
-
 
     private void signOut() {
         mGoogleSignInClient.signOut()

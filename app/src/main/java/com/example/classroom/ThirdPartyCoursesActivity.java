@@ -26,7 +26,7 @@ public class ThirdPartyCoursesActivity extends ThirdPartyLoginActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.thirdparty_courses);
 
         Button getBtn = findViewById(R.id.getBtn);
         getBtn.setOnClickListener(new View.OnClickListener() {
@@ -37,7 +37,7 @@ public class ThirdPartyCoursesActivity extends ThirdPartyLoginActivity {
                         .addOnSuccessListener(new OnSuccessListener<List<Course>>() {
                             @Override
                             public void onSuccess(List<Course> courses) {
-                                if(courses.size() > 0) {
+                                if(true) {
                                     Course course = courses.get(0);
 
                                     // Get courseworks in selected course.

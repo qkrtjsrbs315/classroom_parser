@@ -1,20 +1,34 @@
 package com.example.classroom;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.SignInButton;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
+import com.google.android.gms.common.api.GoogleApi;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.classroom.Classroom;
+import com.google.api.services.classroom.ClassroomScopes;
+import com.google.api.services.classroom.model.Course;
+
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,12 +36,14 @@ public class MainActivity extends AppCompatActivity {
     Button listBtn;
     int RC_SIGN_IN = 0;
     GoogleSignInClient mGoogleSignInClient;
-    protected ClassroomServiceHelper mClassroomServiceHelper;
+    ClassroomServiceHelper mClassroomServiceHelper;
+    private String TAG = "MainActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         signin = findViewById(R.id.sign_in_button);
         signin.setOnClickListener(v -> {
             if (v.getId() == R.id.sign_in_button) {
@@ -35,77 +51,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-            GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                    .requestEmail()
-                    .build();
-            mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
-            listBtn = findViewById(R.id.listBtn);
-            listBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
 
     }
-//    @Override
-//    protected void onResume() {
-//        super.onResume();
-//
-//        makeSignInClient(new Scope(ClassroomScopes.CLASSROOM_COURSES), new Scope(ClassroomScopes.CLASSROOM_COURSEWORK_STUDENTS));
-//        checkAlreadyLogin();
-//    }
-//
-//    public void checkAlreadyLogin() {
-//        Task<GoogleSignInAccount> task = mGoogleSignInClient.silentSignIn();
-//        if (task.isSuccessful()) {
-//            makeClassroomHelper();
-//            updateUI(true);
-//        } else {
-//            task.addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
-//                @Override
-//                public void onSuccess(GoogleSignInAccount googleSignInAccount) {
-//                    updateUI(true);
-//                }
-//            }).addOnFailureListener(new OnFailureListener() {
-//                @Override
-//                public void onFailure(@NonNull Exception e) {
-    //                updateUI(false);
-     //           }
-       //     });
-        //}
-    //}
-
-//    private void updateUI(boolean b) {
-//    }
-//
-//    private void makeSignInClient(Scope scope, Scope scope1) {
-//    }
-//
-//    protected void makeClassroomHelper() {
-//        Set<String> scopes = new HashSet<>();
-//        scopes.add(ClassroomScopes.CLASSROOM_COURSES);
-//        scopes.add(ClassroomScopes.CLASSROOM_COURSEWORK_STUDENTS);
-//        GoogleSignInAccount googleSignInAccount = GoogleSignIn.getLastSignedInAccount(this);
-//        GoogleAccountCredential credential =
-//                GoogleAccountCredential.usingOAuth2(
-//                        this,  scopes);
-//        credential.setSelectedAccount(googleSignInAccount.getAccount());
-//        Classroom service = new Classroom.Builder(AndroidHttp.newCompatibleTransport(), new GsonFactory(), credential)
-//                .setApplicationName("GRExample")
-//                .build();
-//
-//        mClassroomServiceHelper = new ClassroomServiceHelper(service);
-//    }
-//
-
-
 
     private void signIn() {
+        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail()
+                .requestScopes(new Scope(ClassroomScopes.CLASSROOM_COURSES_READONLY))
+                .build();
+        mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+
         Intent intent = mGoogleSignInClient.getSignInIntent();
         startActivityForResult(intent,RC_SIGN_IN);
 
     }
+
+
+
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -114,52 +78,67 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == RC_SIGN_IN) {
             // The Task returned from this call is always completed, no need to attach
             // a listener.
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            handleSignInResult(task);
+            handleSignInResult(data);
         }
     }
-    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
-        try {
-            GoogleSignInAccount account = completedTask.getResult(ApiException.class);
-            // Signed in successfully, show authenticated UI.
-            Intent intent = new Intent(MainActivity.this,ResultActivity.class);
-            startActivity(intent);
-        } catch (ApiException e) {
-            // The ApiException status code indicates the detailed failure reason.
-            // Please refer to the GoogleSignInStatusCodes class reference for more information.
-            Log.v("ERROR", "signInResult:failed code=" + e.getStatusCode());
-        }
+
+    private void handleSignInResult(Intent data) {
+        // GoogleSignInAccount account = task.getResult(ApiException.class);
+        GoogleSignIn.getSignedInAccountFromIntent(data)
+                .addOnSuccessListener(new OnSuccessListener<GoogleSignInAccount>() {
+                    @Override
+                    public void onSuccess(GoogleSignInAccount account) {
+                        GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(MainActivity.this,Collections.singleton(ClassroomScopes.CLASSROOM_COURSES_READONLY));
+
+                        credential.setSelectedAccount(account.getAccount());
+
+                        Classroom classroom = new Classroom.Builder(
+                                AndroidHttp.newCompatibleTransport(),
+                                new GsonFactory(),
+                                credential)
+                                .setApplicationName("My Classroom tutorial")
+                                .build();
+
+                        mClassroomServiceHelper = new ClassroomServiceHelper(classroom);
+
+                        // Signed in successfully, show authenticated UI.
+
+                        course();
+                        Intent intent = new Intent(MainActivity.this, ResultActivity.class);
+                        startActivity(intent);
 
 
-//        protected void makeSignInClient(Scope scope1, Scope scope2) {
-//            GoogleSignInOptions signInOptions =
-//                    new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-//                            .requestEmail()
-//                            .requestScopes(scope1)
-//                            .requestScopes(scope2)
-//                            .build();
-//            mGoogleSignInClient = GoogleSignIn.getClient(this, signInOptions);
-//        }
-//
-//        protected void makeClassroomHelper() {
-//            Set<String> scopes = new HashSet<>();
-//            scopes.add(ClassroomScopes.CLASSROOM_COURSES);
-//            scopes.add(ClassroomScopes.CLASSROOM_COURSEWORK_STUDENTS);
-//            GoogleSignInAccount googleSignInAccount = GoogleSignIn.getLastSignedInAccount(this);
-//            GoogleAccountCredential credential =
-//                    GoogleAccountCredential.usingOAuth2(
-//                            this,  scopes);
-//            credential.setSelectedAccount(googleSignInAccount.getAccount());
-//            Classroom service = new Classroom.Builder(AndroidHttp.newCompatibleTransport(), new GsonFactory(), credential)
-//                    .setApplicationName("GRExample")
-//                    .build();
-//
-//            mClassroomServiceHelper = new ClassroomServiceHelper(service);
-//        }
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+            }
+        });
+    }
+
+    public void course(){
+        ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
+        progressDialog.setTitle("Classroom List getting");
+        progressDialog.setMessage("Please wait");
+        progressDialog.show();
+
+        mClassroomServiceHelper.listCourses().addOnSuccessListener(new OnSuccessListener<List<Course>>() {
+            @Override
+            public void onSuccess(List<Course> courses) {
+                Log.d(TAG,"Classroom"+courses.toString()+".");
+
+                progressDialog.dismiss();
 
 
-
-
-
+            }
+        })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        progressDialog.dismiss();
+                        Toast.makeText(getApplicationContext(),"Check your Classroom",Toast.LENGTH_LONG).show();
+                    }
+                });
     }
 }
